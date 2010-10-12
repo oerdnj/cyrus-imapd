@@ -1111,6 +1111,36 @@ void sighandler_setup(void)
     }
 }
 
+/*
+ * Receives a message from a service.
+ *
+ * Returns zero if all goes well
+ * 1 if no msg available
+ * 2 if bad message received (incorrectly sized)
+ * -1 on error (errno set)
+ */
+int read_msg(int fd, struct notify_message *msg)
+{
+	ssize_t r;
+	size_t off = 0;
+	int s = sizeof(struct notify_message);
+
+	while (s > 0) {
+	    do
+		r = read(fd, msg + off, s);
+	    while ((r == -1) && (errno == EINTR));
+	    if (r <= 0) break;
+	    s -= r;
+	    off += r;
+	}
+	if ( ((r == 0) && (off == 0)) ||
+	     ((r == -1) && (errno == EAGAIN)) )
+	    return 1;
+	if (r == -1) return -1;
+	if (s != 0) return 2;
+	return 0;
+}
+
 void process_msg(const int si, struct notify_message *msg) 
 {
     struct centry *c;
@@ -2129,13 +2159,19 @@ int main(int argc, char **argv)
 	    int j;
 
 	    if (FD_ISSET(x, &rfds)) {
-		r = read(x, &msg, sizeof(msg));
-		if (r != sizeof(msg)) {
-		    syslog(LOG_ERR, "got incorrectly sized response from child: %x", i);
+		while ((r = read_msg(x, &msg)) == 0)
+		    process_msg(&Services[i], &msg);
+
+		if (r == 2) {
+		    syslog(LOG_ERR,
+			"got incorrectly sized response from child: %x", i);
 		    continue;
 		}
-		
-		process_msg(i, &msg);
+		if (r < 0) {
+		    syslog(LOG_ERR,
+			"error while receiving message from child %x: %m", i);
+		    continue;
+		}
 	    }
 
 	    if (!in_shutdown && Services[i].exec &&
