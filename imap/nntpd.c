@@ -39,7 +39,6 @@
  * AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING
  * OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *
- * $Id: nntpd.c,v 1.77 2009/12/16 02:51:42 brong Exp $
  */
 
 /*
@@ -103,6 +102,7 @@
 #include "sync_log.h"
 #include "telemetry.h"
 #include "tls.h"
+#include "userdeny.h"
 #include "util.h"
 #include "version.h"
 #include "wildmat.h"
@@ -494,6 +494,10 @@ int service_init(int argc __attribute__((unused)),
     quotadb_init(0);
     quotadb_open(NULL);
 
+    /* open the user deny db */
+    denydb_init(0);
+    denydb_open(NULL);
+
     /* setup for sending IMAP IDLE notifications */
     idle_enabled();
 
@@ -704,6 +708,9 @@ void shut_down(int code)
     quotadb_close();
     quotadb_done();
 
+    denydb_close();
+    denydb_done();
+
     annotatemore_close();
     annotatemore_done();
 
@@ -815,7 +822,7 @@ static void cmdloop(void)
 	/* Check for shutdown file */
 	if (shutdown_file(buf, sizeof(buf)) ||
 	    (nntp_userid &&
-	     !access_ok(nntp_userid, config_ident, buf, sizeof(buf)))) {
+	     userdeny(nntp_userid, config_ident, buf, sizeof(buf)))) {
 	    prot_printf(nntp_out, "400 %s\r\n", buf);
 	    shut_down(0);
 	}

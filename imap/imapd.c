@@ -38,7 +38,6 @@
  * AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING
  * OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *
- * $Id: imapd.c,v 1.575.2.1 2010/02/12 03:38:16 brong Exp $
  */
 
 #include <config.h>
@@ -101,6 +100,7 @@
 #include "telemetry.h"
 #include "tls.h"
 #include "user.h"
+#include "userdeny.h"
 #include "util.h"
 #include "version.h"
 #include "xmalloc.h"
@@ -666,6 +666,10 @@ int service_init(int argc, char **argv, char **envp)
     quotadb_init(0);
     quotadb_open(NULL);
 
+    /* open the user deny db */
+    denydb_init(0);
+    denydb_open(NULL);
+
     /* setup for sending IMAP IDLE notifications */
     idle_enabled();
 
@@ -888,6 +892,9 @@ void shut_down(int code)
     quotadb_close();
     quotadb_done();
 
+    denydb_close();
+    denydb_done();
+
     annotatemore_close();
     annotatemore_done();
 
@@ -1026,7 +1033,7 @@ void cmdloop()
 	/* Check for shutdown file */
 	if ( !imapd_userisadmin && imapd_userid &&
 	     (shutdown_file(shut, sizeof(shut)) ||
-	      !access_ok(imapd_userid, config_ident, shut, sizeof(shut)))) {
+	      userdeny(imapd_userid, config_ident, shut, sizeof(shut)))) {
 	    for (p = shut; *p == '['; p++); /* can't have [ be first char */
 	    prot_printf(imapd_out, "* BYE [ALERT] %s\r\n", p);
 	    shut_down(0);
@@ -2608,7 +2615,7 @@ void cmd_idle(char *tag)
 	    if (!imapd_userisadmin &&
 		(shutdown_file(buf, sizeof(buf)) ||
 		 (imapd_userid && 
-		  !access_ok(imapd_userid, config_ident, buf, sizeof(buf))))) {
+		  userdeny(imapd_userid, config_ident, buf, sizeof(buf))))) {
 		shutdown = done = 1;
 		goto done;
 	    }
@@ -2669,7 +2676,7 @@ void idle_update(idle_flags_t flags)
 	if (! imapd_userisadmin &&
 	    (shutdown_file(shut, sizeof(shut)) ||
 	     (imapd_userid && 
-	      !access_ok(imapd_userid, config_ident, shut, sizeof(shut))))) {
+	      userdeny(imapd_userid, config_ident, shut, sizeof(shut))))) {
 	    char *p;
 	    for (p = shut; *p == '['; p++); /* can't have [ be first char */
 	    prot_printf(imapd_out, "* BYE [ALERT] %s\r\n", p);

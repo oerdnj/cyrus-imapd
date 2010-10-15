@@ -39,7 +39,6 @@
  * AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING
  * OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *
- * $Id: pop3d.c,v 1.199 2009/12/17 15:32:32 murch Exp $
  */
 
 #include <config.h>
@@ -88,6 +87,7 @@
 #include "backend.h"
 #include "proxy.h"
 #include "seen.h"
+#include "userdeny.h"
 
 #include "sync_log.h"
 #include "statuscache.h"
@@ -426,6 +426,10 @@ int service_init(int argc __attribute__((unused)),
     quotadb_init(0);
     quotadb_open(NULL);
 
+    /* open the user deny db */
+    denydb_init(0);
+    denydb_open(NULL);
+
     if (config_getswitch(IMAPOPT_STATUSCACHE)) {
 	/* open statuscache db to optimize handling an empty maildrop */
 	statuscache_open(NULL);
@@ -631,6 +635,9 @@ void shut_down(int code)
     quotadb_close();
     quotadb_done();
 
+    denydb_close();
+    denydb_done();
+
     if (popd_in) {
 	prot_NONBLOCK(popd_in);
 	prot_fill(popd_in);
@@ -792,7 +799,7 @@ static void cmdloop(void)
 	/* check for shutdown file */
 	if (shutdown_file(inputbuf, sizeof(inputbuf)) ||
 	    (popd_userid &&
-	     !access_ok(popd_userid, config_ident, inputbuf, sizeof(inputbuf)))) {
+	     userdeny(popd_userid, config_ident, inputbuf, sizeof(inputbuf)))) {
 	    for (p = inputbuf; *p == '['; p++); /* can't have [ be first char */
 	    prot_printf(popd_out, "-ERR [SYS/TEMP] %s\r\n", p);
 	    shut_down(0);
@@ -1953,7 +1960,7 @@ static void bitpipe(void)
 
 	/* check for shutdown file */
 	if (shutdown_file(buf, sizeof(buf)) ||
-	    !access_ok(popd_userid, config_ident, buf, sizeof(buf))) {
+	    userdeny(popd_userid, config_ident, buf, sizeof(buf))) {
 	    shutdown = 1;
 	    goto done;
 	}
