@@ -931,7 +931,7 @@ And the notification message will be available on \fIstdin\fR.
    users, separated by spaces.  Any user listed in this will be
    allowed to login for any other user: use with caution. */ 
 
-{ "pts_module", "afskrb", STRINGLIST("afskrb", "ldap") }
+{ "pts_module", "afskrb", STRINGLIST("afskrb", "groupfile", "ldap") }
 /* The PTS module to use. */
 
 { "ptloader_sock", NULL, STRING }
