@@ -54,8 +54,6 @@ RANLIB = @RANLIB@
 
 DEFS = @DEFS@
 CPPFLAGS = -I.. -I$(srcdir)/../imap -I$(srcdir)/../lib @COM_ERR_CPPFLAGS@ @CPPFLAGS@ @SASLFLAGS@
-AFS_LDFLAGS = @AFS_LDFLAGS@ @COM_ERR_LDFLAGS@
-AFS_LIBS = @AFS_LIBS@
 IMAP_LIBS = @IMAP_LIBS@ @LIB_RT@
 LIBS = $(IMAP_LIBS) @COM_ERR_LIBS@
 LIB_SASL = @LIB_SASL@
@@ -63,9 +61,20 @@ LIB_WRAP = @LIB_WRAP@
 DEPLIBS = ../imap/libimap.a ../lib/libcyrus.a ../lib/libcyrus_min.a @DEPLIBS@
 UTIL_LIBS = ../imap/mutex_fake.o ../imap/cli_fatal.o
 
+# With or without AFS?
+ifdef WITH_AFS
+AFS_LDFLAGS = @AFS_LDFLAGS@ @COM_ERR_LDFLAGS@
+AFS_LIBS = @AFS_LIBS@
+AFS_BIN = afskrb.o
+endif
+
+# With or without ldap?
+ifdef HAVE_LDAP
 LDAP_LIBS=@LDAP_LIBS@
 LDAP_CPPFLAGS=@LDAP_CPPFLAGS@
 LDAP_LDFLAGS=@LDAP_LDFLAGS@
+LDAP_BIN = ldap.o
+endif
 
 CFLAGS = @CFLAGS@
 LDFLAGS = @LDFLAGS@
@@ -96,11 +105,11 @@ install:
 .c.o:
 	$(CC) -c $(CPPFLAGS) $(LDAP_CPPFLAGS) $(DEFS) $(CFLAGS) $<
 
-ptloader: ptloader.o afskrb.o ldap.o ../imap/mutex_fake.o $(DEPLIBS)
-	$(CC) $(LDFLAGS) -o $@ ptloader.o afskrb.o ldap.o ../imap/mutex_fake.o $(SERVICETHREAD) ${AFS_LDFLAGS} ${LDAP_LDFLAGS} $(AFS_LIBS) ${LDAP_LIBS} $(DEPLIBS) $(LIB_SASL) $(LIBS) $(LIB_WRAP) $(LIB_RT)
+ptloader: ptloader.o $(AFS_BIN) $(LDAP_BIN) ../imap/mutex_fake.o $(DEPLIBS)
+	$(CC) $(LDFLAGS) -o $@ ptloader.o $(AFS_BIN) $(LDAP_BIN) ../imap/mutex_fake.o $(SERVICETHREAD) ${AFS_LDFLAGS} ${LDAP_LDFLAGS} $(AFS_LIBS) ${LDAP_LIBS} $(DEPLIBS) $(LIB_SASL) $(LIBS) $(LIB_WRAP) $(LIB_RT)
 
-ptloader.pure: ptloader.o afskrb.o ldap.o ../imap/mutex_fake.o $(DEPLIBS)
-	$(PURIFY) $(PUREARGS) $(CC) $(LDFLAGS) -o $@ ptloader.o afskrb.o ldap.o ../imap/mutex_fake.o $(SERVICETHREAD) ${AFS_LDFLAGS} ${LDAP_LDFLAGS} $(AFS_LIBS) ${LDAP_LIBS} $(DEPLIBS) $(LIB_SASL) $(LIBS) $(LIB_WRAP) $(LIB_RT)
+ptloader.pure: ptloader.o $(AFS_BIN) $(LDAP_BIN) ../imap/mutex_fake.o $(DEPLIBS)
+	$(PURIFY) $(PUREARGS) $(CC) $(LDFLAGS) -o $@ ptloader.o $(AFS_BIN) $(LDAP_BIN) ../imap/mutex_fake.o $(SERVICETHREAD) ${AFS_LDFLAGS} ${LDAP_LDFLAGS} $(AFS_LIBS) ${LDAP_LIBS} $(DEPLIBS) $(LIB_SASL) $(LIBS) $(LIB_WRAP) $(LIB_RT)
 
 ptexpire: ptexpire.o $(DEPLIBS) $(UTIL_LIBS)
 	$(CC) $(LDFLAGS) -o $@ ptexpire.o $(UTIL_LIBS) $(DEPLIBS) $(LIB_SASL) $(LIBS) $(LIB_RT)
