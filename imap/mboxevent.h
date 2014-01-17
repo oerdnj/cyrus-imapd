@@ -79,13 +79,14 @@ enum event_type {
     EVENT_MAILBOX_DELETE      = (1<<16),
     EVENT_MAILBOX_RENAME      = (1<<17),
     EVENT_MAILBOX_SUBSCRIBE   = (1<<18),
-    EVENT_MAILBOX_UNSUBSCRIBE = (1<<19)
+    EVENT_MAILBOX_UNSUBSCRIBE = (1<<19),
+    EVENT_ACL_CHANGE          = (1<<20),
 };
 
 /* The number representing the last available position in
  * event_param, which should always be messageContent.
  */
-#define MAX_PARAM 23
+#define MAX_PARAM 26
 
 /*
  * event parameters defined in RFC 5423 - Internet Message Store Events
@@ -93,17 +94,17 @@ enum event_type {
  * ordered to optimize the parsing of the notification message
  */
 enum event_param {
-    EVENT_TIMESTAMP,
-    EVENT_SERVICE,
+    EVENT_TIMESTAMP,	  /* 0 */
+    EVENT_SERVICE,        /* 1 */
     EVENT_SERVER_ADDRESS, /* gather serverDomain and serverPort together */
     EVENT_CLIENT_ADDRESS, /* gather clientIP and clientPort together */
     EVENT_OLD_MAILBOX_ID,
-    EVENT_OLD_UIDSET,
+    EVENT_OLD_UIDSET,     /* 5 */
     EVENT_MAILBOX_ID,
     EVENT_URI,
     EVENT_MODSEQ,
     EVENT_DISK_QUOTA,
-    EVENT_DISK_USED,
+    EVENT_DISK_USED,      /* 10 */
     EVENT_MAX_MESSAGES,
     EVENT_MESSAGES,
     EVENT_UNSEEN_MESSAGES,
@@ -115,6 +116,8 @@ enum event_param {
     EVENT_USER,
     EVENT_MESSAGE_SIZE,
     EVENT_ENVELOPE,
+    EVENT_ACL_SUBJECT,
+    EVENT_ACL_RIGHTS,
     EVENT_BODYSTRUCTURE,
     EVENT_MESSAGE_CONTENT
 };
@@ -212,6 +215,13 @@ void mboxevent_add_flag(struct mboxevent *event, const char *flag);
 void mboxevent_set_access(struct mboxevent *event,
                           const char *serveraddr, const char *clientaddr,
                           const char *userid, const char *mailboxname);
+
+/*
+ * Shortcut to setting event notification parameters
+ */
+void mboxevent_set_acl(struct mboxevent *event, const char *identifier,
+			   const char *rights);
+
 /*
  * Extract data from the given record to fill these event parameters :
  * - uidset from UID

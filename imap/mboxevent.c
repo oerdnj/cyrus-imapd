@@ -74,7 +74,7 @@
 
 #define MAILBOX_EVENTS (EVENT_MAILBOX_CREATE|EVENT_MAILBOX_DELETE|\
 			EVENT_MAILBOX_RENAME|EVENT_MAILBOX_SUBSCRIBE|\
-			EVENT_MAILBOX_UNSUBSCRIBE)
+			EVENT_MAILBOX_UNSUBSCRIBE|EVENT_ACL_CHANGE)
 
 #define QUOTA_EVENTS   (EVENT_QUOTA_EXCEED|EVENT_QUOTA_WITHIN|EVENT_QUOTA_CHANGE)
 
@@ -123,6 +123,8 @@ static struct mboxevent event_template =
     { EVENT_PID, "pid", EVENT_PARAM_INT, 0, 0 },
     { EVENT_USER, "user", EVENT_PARAM_STRING, 0, 0 },
     { EVENT_MESSAGE_SIZE, "messageSize", EVENT_PARAM_INT, 0, 0 },
+    { EVENT_ACL_SUBJECT, "aclSubject", EVENT_PARAM_STRING, 0, 0 },
+    { EVENT_ACL_RIGHTS, "aclRights", EVENT_PARAM_STRING, 0, 0 },
     /* always at end to let the parser to easily truncate this part */
     { EVENT_ENVELOPE, "vnd.cmu.envelope", EVENT_PARAM_STRING, 0, 0 },
     { EVENT_BODYSTRUCTURE, "bodyStructure", EVENT_PARAM_STRING, 0, 0 },
@@ -173,7 +175,7 @@ EXPORTED void mboxevent_init(void)
 	enabled_events |= FLAGS_EVENTS;
 
     if (groups & IMAP_ENUM_EVENT_GROUPS_ACCESS)
-	enabled_events |= (EVENT_LOGIN|EVENT_LOGOUT);
+	enabled_events |= (EVENT_LOGIN|EVENT_LOGOUT|EVENT_ACL_CHANGE);
 
     if (groups & IMAP_ENUM_EVENT_GROUPS_MAILBOX)
 	enabled_events |= MAILBOX_EVENTS;
@@ -377,6 +379,10 @@ static int mboxevent_expected_param(enum event_type type, enum event_param param
 	return extra_params & IMAP_ENUM_EVENT_EXTRA_PARAMS_SERVICE;
     case EVENT_TIMESTAMP:
 	return extra_params & IMAP_ENUM_EVENT_EXTRA_PARAMS_TIMESTAMP;
+    case EVENT_ACL_SUBJECT:
+	return type & EVENT_ACL_CHANGE;
+    case EVENT_ACL_RIGHTS:
+	return type & EVENT_ACL_CHANGE;
     case EVENT_UIDNEXT:
 	if (!(extra_params & IMAP_ENUM_EVENT_EXTRA_PARAMS_UIDNEXT))
 	    return 0;
@@ -639,6 +645,16 @@ EXPORTED void mboxevent_set_access(struct mboxevent *event,
 				    config_virtdomains ? strcspn(userbuf, "@") : 0);
 	FILL_STRING_PARAM(event, EVENT_USER, userbuf);
     }
+}
+
+EXPORTED void mboxevent_set_acl(struct mboxevent *event, const char *identifier,
+				    const char *rights)
+{
+    if (!event)
+	return;
+
+    FILL_STRING_PARAM(event, EVENT_ACL_SUBJECT, xstrdup(identifier));
+    FILL_STRING_PARAM(event, EVENT_ACL_RIGHTS, xstrdup(rights));
 }
 
 EXPORTED void mboxevent_extract_record(struct mboxevent *event, struct mailbox *mailbox,
@@ -1009,6 +1025,8 @@ static const char *event_to_name(enum event_type type)
 	return "MailboxSubscribe";
     case EVENT_MAILBOX_UNSUBSCRIBE:
 	return "MailboxUnSubscribe";
+    case EVENT_ACL_CHANGE:
+	return "AclChange";
     default:
 	fatal("Unknown message event", EC_SOFTWARE);
     }
@@ -1205,6 +1223,12 @@ EXPORTED void mboxevent_set_access(struct mboxevent *event __attribute__((unused
 				   const char *clientaddr __attribute__((unused)),
 				   const char *userid __attribute__((unused)),
 				   const char *mailboxname __attribute__((unused)))
+{
+}
+
+EXPORTED void mboxevent_set_acl(struct mboxevent *event __attribute__((unused)),
+				const char *identifier __attribute__((unused)),
+>.......>.......>.......>.......const char *rights __attribute__((unused)))
 {
 }
 
