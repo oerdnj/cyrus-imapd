@@ -1029,9 +1029,9 @@ static int eval_bc_test(sieve_interp_t *interp, void* m,
 /* The entrypoint for bytecode evaluation */
 int sieve_eval_bc(sieve_execute_t *exe, int is_incl, sieve_interp_t *i,
 		  void *sc, void *m,
-		  strarray_t *imapflags, action_list_t *actions,
+		  variable_list_t *flagvars, action_list_t *actions,
 		  notify_list_t *notify_list, const char **errmsg,
-		  strarray_t *workingflags)
+		  variable_list_t *workingvars)
 {
     const char *data;
     int res=0;
@@ -1109,10 +1109,12 @@ int sieve_eval_bc(sieve_execute_t *exe, int is_incl, sieve_interp_t *i,
 	{
 	    int x;
 	    int list_len=ntohl(bc[ip+1].len);
-	    actionflags = strarray_new();
 
 	    ip+=3; /* skip opcode, list_len, and list data len */
 
+	    if (list_len) {
+		actionflags = (varlist_extend(flagvars))->var;
+	    }
 	    for (x=0; x<list_len; x++) {
 		const char *flag;
 		ip = unwrap_string(bc, ip, &flag, NULL);
@@ -1122,7 +1124,8 @@ int sieve_eval_bc(sieve_execute_t *exe, int is_incl, sieve_interp_t *i,
 	    copy = ntohl(bc[ip].value);
 	    /* fall through */
 	case B_KEEP_ORIG:/*1*/
-	    res = do_keep(actions, !copy, imapflags, actionflags);
+	    res = do_keep(actions, !copy,
+		    actionflags ? actionflags : flagvars->var, NULL);
 	    if (res == SIEVE_RUN_ERROR)
 		*errmsg = "Keep can not be used with Reject";
 	    actionflags = NULL;
@@ -1148,10 +1151,12 @@ int sieve_eval_bc(sieve_execute_t *exe, int is_incl, sieve_interp_t *i,
 	{
 	    int x;
 	    int list_len=ntohl(bc[ip+1].len);
-	    actionflags = strarray_new();
 
 	    ip+=3; /* skip opcode, list_len, and list data len */
 
+	    if (list_len) {
+		actionflags = (varlist_extend(flagvars))->var;
+	    }
 	    for (x=0; x<list_len; x++) {
 		const char *flag;
 		ip = unwrap_string(bc, ip, &flag, NULL);
@@ -1168,7 +1173,8 @@ int sieve_eval_bc(sieve_execute_t *exe, int is_incl, sieve_interp_t *i,
 	{
 	    ip = unwrap_string(bc, ip, &data, NULL);
 
-	    res = do_fileinto(actions, data, !copy, imapflags, actionflags);
+	    res = do_fileinto(actions, data, !copy,
+		    actionflags ? actionflags : flagvars->var, NULL);
 
 	    if (res == SIEVE_RUN_ERROR)
 		*errmsg = "Fileinto can not be used with Reject";
@@ -1200,7 +1206,7 @@ int sieve_eval_bc(sieve_execute_t *exe, int is_incl, sieve_interp_t *i,
 	    int result;
 	   
 	    ip+=2;
-	    result=eval_bc_test(i, m, bc, &ip, workingflags);
+	    result=eval_bc_test(i, m, bc, &ip, workingvars->var);
 	    
 	    if (result<0) {
 		*errmsg = "Invalid test";
@@ -1219,7 +1225,7 @@ int sieve_eval_bc(sieve_execute_t *exe, int is_incl, sieve_interp_t *i,
 	{
 	    int n = i->markflags->count;
 	    while (n) {
-		strarray_add_case(workingflags,i->markflags->data[--n]);
+		strarray_add_case(workingvars->var, i->markflags->data[--n]);
 	    }
 	}
 	    ip++;
@@ -1230,7 +1236,8 @@ int sieve_eval_bc(sieve_execute_t *exe, int is_incl, sieve_interp_t *i,
 	{
 	    int n = i->markflags->count;
 	    while (n) {
-		strarray_remove_all_case(workingflags,i->markflags->data[--n]);
+		strarray_remove_all_case(workingvars->var,
+			i->markflags->data[--n]);
 	    }
 	}
 	    ip++;
@@ -1247,7 +1254,7 @@ int sieve_eval_bc(sieve_execute_t *exe, int is_incl, sieve_interp_t *i,
 		ip = unwrap_string(bc, ip, &data, NULL);
 		
 		res = do_addflag(actions, data);
-		strarray_add_case(workingflags, data);
+		strarray_add_case(workingvars->var, data);
 
 		if (res == SIEVE_RUN_ERROR)
 		    *errmsg = "addflag can not be used with Reject";
@@ -1265,8 +1272,8 @@ int sieve_eval_bc(sieve_execute_t *exe, int is_incl, sieve_interp_t *i,
 	    ip = unwrap_string(bc, ip, &data, NULL);
 
 	    res = do_setflag(actions, data);
-	    strarray_truncate(workingflags, 0);
-	    strarray_add_case(workingflags, data);
+	    strarray_truncate(workingvars->var, 0);
+	    strarray_add_case(workingvars->var, data);
 
 	    if (res == SIEVE_RUN_ERROR) {
 		*errmsg = "setflag can not be used with Reject";
@@ -1275,7 +1282,7 @@ int sieve_eval_bc(sieve_execute_t *exe, int is_incl, sieve_interp_t *i,
 		    ip = unwrap_string(bc, ip, &data, NULL);
 
 		    res = do_addflag(actions, data);
-		    strarray_add_case(workingflags, data);
+		    strarray_add_case(workingvars->var, data);
 
 		    if (res == SIEVE_RUN_ERROR)
 			*errmsg = "setflag can not be used with Reject";
@@ -1296,7 +1303,7 @@ int sieve_eval_bc(sieve_execute_t *exe, int is_incl, sieve_interp_t *i,
 		ip = unwrap_string(bc, ip, &data, NULL);
 
 		res = do_removeflag(actions, data);
-		strarray_remove_all_case(workingflags, data);
+		strarray_remove_all_case(workingvars->var, data);
 
 		if (res == SIEVE_RUN_ERROR)
 		    *errmsg = "removeflag can not be used with Reject";
@@ -1554,8 +1561,8 @@ int sieve_eval_bc(sieve_execute_t *exe, int is_incl, sieve_interp_t *i,
 
 	    if (!res)
 		res = sieve_eval_bc(exe, 1, i,
-				    sc, m, imapflags, actions,
-				    notify_list, errmsg, workingflags);
+				    sc, m, flagvars, actions,
+				    notify_list, errmsg, workingvars);
 
 	    break;
 	}
