@@ -245,6 +245,7 @@ extern void sieverestart(FILE *f);
 %token COPY
 %token DATE CURRENTDATE INDEX LAST ZONE ORIGINALZONE
 %token YEAR MONTH DAY JULIAN HOUR MINUTE SECOND TIME ISO8601 STD11 WEEKDAY
+%token STRINGT SET LOWER UPPER LOWERFIRST UPPERFIRST QUOTEWILDCARD LENGTH
 
 %type <cl> commands command action elsif block
 %type <sl> stringlist strings
