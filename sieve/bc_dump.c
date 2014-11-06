@@ -168,14 +168,20 @@ static int dump_test(bytecode_info_t *d, int ip, int level ) {
 	break;
 	
     case BC_HASFLAG:
+    case BC_STRING:
+	if (BC_HASFLAG == d->data[ip].op) {
 	printf("%d: HASFLAG (\n",ip++);
+	} else {
+	    printf("%d: STRING (\n",ip++);
+
+	}
 	print_spaces(level);
 	if (d->data[ip].value == B_COUNT || d->data[ip].value == B_VALUE)
 	{
-	    printf("      MATCH:%d RELATION:%d COMP:%d FLAG-VARS:\n",
+	    printf("      MATCH:%d RELATION:%d COMP:%d VARS:\n",
 		   d->data[ip].value, d->data[ip+1].value,d->data[ip+2].value);
 	} else {
-	    printf("      MATCH:%d COMP:%d FLAG-VARS:\n",d->data[ip].value, d->data[ip+2].value);
+	    printf("      MATCH:%d COMP:%d VARS:\n",d->data[ip].value, d->data[ip+2].value);
 	}
 	ip+=3;
 	ip = dump_sl(d,ip,level);
@@ -439,6 +445,21 @@ void dump(bytecode_info_t *d, int level)
 		   d->data[i+2].len,d->data[i+3].str);
 	    i+=3;
 	    break;
+
+	case B_SET:
+	{
+	    int m = d->data[i+1].value;
+	    printf("%d: SET:\n",i);
+	    printf("LOWER(%d) UPPER(%d) LOWERFIRST(%d) UPPERFIRST(%d) "
+		    "QUOTEWILDCARD(%d) LENGTH(%d) VAR({%d}%s) VAL({%d}%s)\n",
+		    m & BFV_LOWER, m & BFV_UPPER, m & BFV_LOWERFIRST,
+		    m & BFV_UPPERFIRST, m & BFV_QUOTEWILDCARD, m & BFV_LENGTH,
+		    d->data[i+2].len, d->data[i+3].str, d->data[i+4].len,
+		    d->data[i+5].str);
+	    i+=5;
+	}
+	    break;
+
 
 	case B_RETURN:
 	    printf("%d: RETURN\n",i);
