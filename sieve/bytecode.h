@@ -298,4 +298,8 @@ enum bytecode_variables_bitflags {
     BFV_LENGTH		= 1<<5
 };
 
+enum bytecode_required_extensions {
+    BFE_VARIABLES	= 1<<0
+};
+
 #endif
