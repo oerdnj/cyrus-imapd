@@ -1956,6 +1956,35 @@ int sieve_eval_bc(sieve_execute_t *exe, int is_incl, sieve_interp_t *i,
 		res=1;
 	    break;
 
+	case B_SET:/*24*/
+	{
+	    int modifiers = ntohl(bc[ip++].value);
+	    variable_list_t *variable = NULL;
+
+	    /* get the variable name */
+	    ip = unwrap_string(bc, ip, &data, NULL);
+
+	    /* select or create the variable */
+	    variable = varlist_select(variables, data);
+	    if (variable) {
+		actionflags = variable->var;
+	    } else {
+		actionflags = (variable = varlist_extend(variables))->var;
+		variable->name = xstrdup(data);
+	    }
+
+	    /* get the variable value */
+	    ip = unwrap_string(bc, ip, &data, NULL);
+
+	    strarray_fini(variable->var);
+	    data = parse_string(data, variables);
+	    /* TODO: apply modifiers to data */
+	    strarray_append(variable->var, data);
+
+	    actionflags = NULL;
+	    break;
+	}
+
 	default:
 	    if(errmsg) *errmsg = "Invalid sieve bytecode";
 	    return SIEVE_FAIL;
