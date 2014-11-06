@@ -106,7 +106,7 @@ typedef union
  * version 0x08 scripts implemented DATE and INDEX extensions
  * version 0x09 scripts implemented IMAP4FLAGS extension
  */
-#define BYTECODE_VERSION 0x09
+#define BYTECODE_VERSION 0x0A
 #define BYTECODE_MIN_VERSION 0x03 /* minimum supported version */
 #define BYTECODE_MAGIC "CyrSBytecode"
 #define BYTECODE_MAGIC_LEN 12 /* Should be multiple of 4 */
@@ -296,6 +296,10 @@ enum bytecode_variables_bitflags {
     BFV_UPPERFIRST	= 1<<3,
     BFV_QUOTEWILDCARD	= 1<<4,
     BFV_LENGTH		= 1<<5
+};
+
+enum bytecode_required_extensions {
+    BFE_VARIABLES	= 1<<0
 };
 
 #endif

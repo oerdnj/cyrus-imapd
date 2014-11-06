@@ -556,6 +556,9 @@ static void dump2(bytecode_input_t *d, int bc_len)
 
     version = ntohl(d[i].op);
     printf("Sievecode version %d\n", version);
+    if (version >= 0x0A && ntohl(d[++i].value) & BFE_VARIABLES) {
+	printf("Require Variables\n");
+    }
     
     for(i++; i<bc_len;) 
     {

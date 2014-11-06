@@ -310,12 +310,16 @@ static int dump_test(bytecode_info_t *d, int ip, int level ) {
 
 void dump(bytecode_info_t *d, int level) 
 {
-    int i;
+    int i = 0;
     printf("Dumping almost flattened bytecode\n\n");
     
     if(!d) return;
 
-    for(i=0; i<d->scriptend; i++) {
+    if (d->data[i++].value & BFE_VARIABLES) {
+	printf("Require Variables\n");
+    }
+
+    for(; i<d->scriptend; i++) {
 	print_spaces(level);
 	switch(d->data[i].op) {
 	case B_REJECT:

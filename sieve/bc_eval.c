@@ -1406,6 +1406,7 @@ int sieve_eval_bc(sieve_execute_t *exe, int is_incl, sieve_interp_t *i,
     int res=0;
     int op;
     int version;
+    int requires = 0;
   
     sieve_bytecode_t *bc_cur = exe->bc_cur;
     bytecode_input_t *bc = (bytecode_input_t *) bc_cur->data;
@@ -1458,6 +1459,10 @@ int sieve_eval_bc(sieve_execute_t *exe, int is_incl, sieve_interp_t *i,
 #if VERBOSE
     printf("version number %d\n",version); 
 #endif
+
+    if (version >= 0x0A) {
+	requires = ntohl(bc[++ip].value);
+    }
 
     for(ip++; ip<ip_max; ) { 
 	/* In this loop, when a case is switch'ed to, ip points to the first
