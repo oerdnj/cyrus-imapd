@@ -71,6 +71,9 @@ if header :contains "subject" "variables"
 set :lowerfirst "myvar" "myval";
 set :lower :upperfirst :quotewildcard "myvar2" "my*val2";
 
+set "mystring" "string1";
+set "mystring2" "00${mystring}00";
+
 if string "myvar2" "my*val2" {
 fileinto :copy "INBOX.stringtest.true";
 }
