@@ -535,6 +535,9 @@ static int eval_bc_test(sieve_interp_t *interp, void* m,
 	    res = SIEVE_RUN_ERROR;
 	    break;
 	}
+	if (!comprock) {
+	    comprock = varlist_select(variables, VL_MATCH_VARS)->var;
+	}
 
 	/*loop through all the headers*/
 	currh=headersi+2;
@@ -760,6 +763,9 @@ envelope_err:
 	    res = SIEVE_RUN_ERROR;
 	    break;
 	}
+	if (!comprock) {
+	    comprock = varlist_select(variables, VL_MATCH_VARS)->var;
+	}
 
 	/*search through all the flags for the header*/
 	currh=headersi+2;
@@ -901,6 +907,9 @@ envelope_err:
 	    res = SIEVE_RUN_ERROR;
 	    break;
 	}
+	if (!comprock) {
+	    comprock = varlist_select(variables, VL_MATCH_VARS)->var;
+	}
 
 	if  (match == B_COUNT )
 	{
@@ -1008,6 +1017,9 @@ envelope_err:
 	if(!comp) {
 	    res = SIEVE_RUN_ERROR;
 	    break;
+	}
+	if (!comprock) {
+	    comprock = varlist_select(variables, VL_MATCH_VARS)->var;
 	}
 	
 	if (transform == B_RAW) {
@@ -1202,6 +1214,9 @@ envelope_err:
 	if(!comp) {
 		res = SIEVE_RUN_ERROR;
 		break;
+	}
+	if (!comprock) {
+	    comprock = varlist_select(variables, VL_MATCH_VARS)->var;
 	}
 
 	/* date-part */
@@ -1790,6 +1805,9 @@ int sieve_eval_bc(sieve_execute_t *exe, int is_incl, sieve_interp_t *i,
 		
 		comp=lookup_comp(B_ASCIICASEMAP,comparator,
 				 x, &comprock);
+		if (!comprock) {
+		    comprock = varlist_select(variables, VL_MATCH_VARS)->var;
+		}
 	    }
 	    
 	    ip = unwrap_string(bc, ip, &pattern, NULL);
