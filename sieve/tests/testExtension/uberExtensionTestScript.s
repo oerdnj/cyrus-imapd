@@ -1,11 +1,11 @@
 require ["regex", "relational", "comparator-i;ascii-numeric", "subaddress",
-	"envelope", "date", "index", "imap4flags"];
+	"envelope", "date", "index", "imap4flags", "variables"];
 
 #this is for the extra thigns we have added to sieve
 #test extensions
 #envelope regex relational comparators subaddress(user and detail)
 
-
+/*
 #need better relational and comparator tests...
 
 if header :value "gt" 
@@ -179,12 +179,17 @@ if currentdate :zone "-0800" :is "year" ["2003", "2013", "2023"]
 if allof(currentdate :value "ge" "date" "2014-01-01",
          currentdate :value "lt" "date" "2015-01-01")
 {redirect "me+cd2014@blah.com";}
-
+*/
 ######################################################################
 #HASFLAG
 ######################################################################
 
-if header :contains "subject" "imap4flags"
+if allof (
+header :matches "subject" "*i*?*?s",
+header :matches "subject" "*i?*?*s",
+header :matches "subject" "*i*??*s",
+header :matches "subject" "*i?**?s"
+)
 {
 
 #
@@ -236,12 +241,12 @@ else
 #
 setflag "there";
 
-if hasflag :contains ["myflag", "here"]
+if hasflag :matches ["m?*?g", "*h??e*"]
 {redirect "me+good.hasflag.contains.pos@blah.com";}
 else
 {redirect "me+bad.hasflag.contains.pos@blah.com";}
 
-if hasflag :contains ""
+if hasflag :matches "**"
 {redirect "me+good.hasflag.contains.null.pos@blah.com";}
 else
 {redirect "me+bad.hasflag.contains.null.pos@blah.com";}
@@ -251,7 +256,7 @@ else
 #
 setflag "flag";
 
-if hasflag ""
+if hasflag :matches "?*?*?*?*?*?"
 {redirect "me+bad.hasflag.null.neg@blah.com";}
 else
 {redirect "me+good.hasflag.null.neg@blah.com";}
@@ -261,7 +266,7 @@ if hasflag :contains "flags"
 else
 {redirect "me+good.hasflag.contains.neg@blah.com";}
 
-if hasflag "lag"
+if hasflag :matches "?la?g*"
 {redirect "me+bad.hasflag.neg@blah.com";}
 else
 {redirect "me+good.hasflag.neg@blah.com";}
