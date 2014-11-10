@@ -160,7 +160,8 @@ static int sysaddr(const char *addr)
 
 /* look for myaddr and myaddrs in the body of a header - return the match */
 static char* look_for_me(char *myaddr, int numaddresses,
-			       bytecode_input_t *bc, int i, const char **body)
+			       bytecode_input_t *bc, int i, const char **body,
+			       variable_list_t *variables, int requires)
 {
     char *found = NULL;
     int l;
@@ -193,6 +194,10 @@ static char* look_for_me(char *myaddr, int numaddresses,
 
 		curra = unwrap_string(bc, curra, &str, NULL);
 		
+		if (requires & BFE_VARIABLES) {
+		    str = parse_string(str, variables);
+		}
+
 		/* is this address one of my addresses? */
 		altaddr = address_canonicalise(str);
 
@@ -214,7 +219,8 @@ static char* look_for_me(char *myaddr, int numaddresses,
 /* Determine if we should respond to a vacation message */
 static int shouldRespond(void * m, sieve_interp_t *interp,
 			 int numaddresses, bytecode_input_t* bc,
-			 int i, char **from, char **to)
+			 int i, char **from, char **to,
+			 variable_list_t *variables, int requires)
 {
     const char **body;
     char *myaddr = NULL;
@@ -301,6 +307,10 @@ static int shouldRespond(void * m, sieve_interp_t *interp,
 
 	curra = unwrap_string(bc, curra, &address, NULL);
 
+	if (requires & BFE_VARIABLES) {
+	    address = parse_string(address, variables);
+	}
+
 	if (!strcmp(address, reply_to))
 	    goto out;
     }
@@ -313,17 +323,17 @@ static int shouldRespond(void * m, sieve_interp_t *interp,
        but is this message to me?  that is, is my address
        in the [Resent]-To, [Resent]-Cc or [Resent]-Bcc fields? */
     if (interp->getheader(m, "to", &body) == SIEVE_OK)
-	found = look_for_me(myaddr, numaddresses, bc, i, body);
+	found = look_for_me(myaddr, numaddresses, bc, i, body, variables, requires);
     if (!found && interp->getheader(m, "cc", &body) == SIEVE_OK)
-	found = look_for_me(myaddr, numaddresses, bc, i, body);
+	found = look_for_me(myaddr, numaddresses, bc, i, body, variables, requires);
     if (!found && interp->getheader(m, "bcc", &body) == SIEVE_OK)
-	found = look_for_me(myaddr, numaddresses, bc, i, body);
+	found = look_for_me(myaddr, numaddresses, bc, i, body, variables, requires);
     if (!found && interp->getheader(m, "resent-to", &body) == SIEVE_OK)
-	found = look_for_me(myaddr, numaddresses ,bc, i, body);
+	found = look_for_me(myaddr, numaddresses ,bc, i, body, variables, requires);
     if (!found && interp->getheader(m, "resent-cc", &body) == SIEVE_OK)
-	found = look_for_me(myaddr, numaddresses, bc, i, body);
+	found = look_for_me(myaddr, numaddresses, bc, i, body, variables, requires);
     if (!found && interp->getheader(m, "resent-bcc", &body) == SIEVE_OK)
-	found = look_for_me(myaddr, numaddresses, bc, i, body);
+	found = look_for_me(myaddr, numaddresses, bc, i, body, variables, requires);
     if (found)
 	l = SIEVE_OK;
 
@@ -345,7 +355,7 @@ out:
 /* Evaluate a bytecode test */
 static int eval_bc_test(sieve_interp_t *interp, void* m,
 			bytecode_input_t * bc, int * ip,
-			variable_list_t *variables, int version)
+			variable_list_t *variables, int version, int requires)
 {
     int res=0; 
     int i=*ip;
@@ -370,7 +380,7 @@ static int eval_bc_test(sieve_interp_t *interp, void* m,
 
     case BC_NOT:/*2*/
 	i+=1;
-	res = eval_bc_test(interp, m, bc, &i, variables, version);
+	res = eval_bc_test(interp, m, bc, &i, variables, version, requires);
 	if(res >= 0) res = !res; /* Only invert in non-error case */
 	break;
 
@@ -393,6 +403,10 @@ static int eval_bc_test(sieve_interp_t *interp, void* m,
 
 	    currh = unwrap_string(bc, currh, &str, NULL);
 	    
+	    if (requires & BFE_VARIABLES) {
+		str = parse_string(str, variables);
+	    }
+
 	    if(interp->getheader(m,str, &val) != SIEVE_OK)
 		res = 0;
 	}
@@ -429,7 +443,7 @@ static int eval_bc_test(sieve_interp_t *interp, void* m,
 	 * in the right place */
 	for (x=0; x<list_len && !res; x++) { 
 	    int tmp;
-	    tmp = eval_bc_test(interp, m, bc, &i, variables, version);
+	    tmp = eval_bc_test(interp, m, bc, &i, variables, version, requires);
 	    if(tmp < 0) {
 		res = tmp;
 		break;
@@ -449,7 +463,7 @@ static int eval_bc_test(sieve_interp_t *interp, void* m,
 	/* return 1 unless you find one that isn't true, then return 0 */
 	for (x=0; x<list_len && res; x++) {
 	    int tmp;
-	    tmp = eval_bc_test(interp, m, bc, &i, variables, version);
+	    tmp = eval_bc_test(interp, m, bc, &i, variables, version, requires);
 	    if(tmp < 0) {
 		res = tmp;
 		break;
@@ -549,6 +563,10 @@ static int eval_bc_test(sieve_interp_t *interp, void* m,
 
 	    currh = unwrap_string(bc, currh, &this_header, NULL);
 	    
+	    if (requires & BFE_VARIABLES) {
+		this_header = parse_string(this_header, variables);
+	    }
+
 	    /* Try the next string if we don't have this one */
 	    if(address) {
 		/* Header */
@@ -638,6 +656,10 @@ static int eval_bc_test(sieve_interp_t *interp, void* m,
 			    
 			    currd = unwrap_string(bc, currd, &data_val, NULL);
 
+			    if (requires & BFE_VARIABLES) {
+				data_val = parse_string(data_val, variables);
+			    }
+
 			    if (isReg) {
 				reg = bc_compile_regex(data_val, ctag,
 						       errbuf, sizeof(errbuf));
@@ -682,6 +704,10 @@ static int eval_bc_test(sieve_interp_t *interp, void* m,
 		const char *data_val;
 		
 		currd = unwrap_string(bc, currd, &data_val, NULL);
+
+		if (requires & BFE_VARIABLES) {
+		    data_val = parse_string(data_val, variables);
+		}
 
 		res |= comp(scount, strlen(scount), data_val, comprock);
 	    }
@@ -774,6 +800,10 @@ envelope_err:
 	    
 	    currh = unwrap_string(bc, currh, &this_header, NULL);
 	   
+	    if (requires & BFE_VARIABLES) {
+		this_header = parse_string(this_header, variables);
+	    }
+
 	    if(interp->getheader(m, this_header, &val) != SIEVE_OK) {
 		continue; /*this header does not exist, search the next*/ 
 	    }
@@ -821,6 +851,10 @@ envelope_err:
 
 			currd = unwrap_string(bc, currd, &data_val, NULL);
 
+			if (requires & BFE_VARIABLES) {
+			    data_val = parse_string(data_val, variables);
+			}
+
 			if (isReg) {
 			    reg= bc_compile_regex(data_val, ctag, errbuf,
 						  sizeof(errbuf));
@@ -854,6 +888,11 @@ envelope_err:
 		const char *data_val;
 			
 		currd = unwrap_string(bc, currd, &data_val, NULL);
+
+		if (requires & BFE_VARIABLES) {
+		    data_val = parse_string(data_val, variables);
+		}
+
 #if VERBOSE
 		printf("%d, %s \n", count, data_val);
 #endif
@@ -921,6 +960,11 @@ envelope_err:
 		const char *this_needle;
 
 		currneedle = unwrap_string(bc, currneedle, &this_needle, NULL);
+
+		if (requires & BFE_VARIABLES) {
+		    this_needle = parse_string(this_needle, variables);
+		}
+
 #if VERBOSE
 		printf("%d, %s \n", count, data_val);
 #endif
@@ -935,6 +979,10 @@ envelope_err:
 	    const char *this_needle;
 
 	    currneedle = unwrap_string(bc, currneedle, &this_needle, NULL);
+
+	    if (requires & BFE_VARIABLES) {
+		this_needle = parse_string(this_needle, variables);
+	    }
 
 #if VERBOSE
 	    printf ("val %s %s %s\n", val[0], val[1], val[2]);
@@ -1055,6 +1103,10 @@ envelope_err:
 			    
 		    currd = unwrap_string(bc, currd, &data_val, NULL);
 
+		    if (requires & BFE_VARIABLES) {
+			data_val = parse_string(data_val, variables);
+		    }
+
 		    if (isReg) {
 			reg = bc_compile_regex(data_val, ctag,
 					       errbuf, sizeof(errbuf));
@@ -1090,6 +1142,10 @@ envelope_err:
 		const char *data_val;
 		
 		currd = unwrap_string(bc, currd, &data_val, NULL);
+
+		if (requires & BFE_VARIABLES) {
+		    data_val = parse_string(data_val, variables);
+		}
 
 		res |= comp(scount, strlen(scount), data_val, comprock);
 	    }
@@ -1224,6 +1280,10 @@ envelope_err:
 	if (BC_DATE == op) {
 		/* header name */
 		i = unwrap_string(bc, i, &header_name, NULL);
+
+		if (requires & BFE_VARIABLES) {
+			header_name = parse_string(header_name, variables);
+		}
 
 		/*
 		 * Process header
@@ -1510,6 +1570,11 @@ int sieve_eval_bc(sieve_execute_t *exe, int is_incl, sieve_interp_t *i,
 	    for (x=0; x<list_len; x++) {
 		const char *flag;
 		ip = unwrap_string(bc, ip, &flag, NULL);
+
+		if (requires & BFE_VARIABLES) {
+		    flag = parse_string(flag, variables);
+		}
+
 		if (flag[0]) {
 		strarray_add_case(actionflags,flag);
 		}
@@ -1540,6 +1605,10 @@ int sieve_eval_bc(sieve_execute_t *exe, int is_incl, sieve_interp_t *i,
 	case B_REJECT:/*3*/
 	    ip = unwrap_string(bc, ip, &data, NULL);
 	    
+	    if (requires & BFE_VARIABLES) {
+		data = parse_string(data, variables);
+	    }
+
 	    res = do_reject(actions, data);
 	
 	    if (res == SIEVE_RUN_ERROR)
@@ -1560,6 +1629,11 @@ int sieve_eval_bc(sieve_execute_t *exe, int is_incl, sieve_interp_t *i,
 	    for (x=0; x<list_len; x++) {
 		const char *flag;
 		ip = unwrap_string(bc, ip, &flag, NULL);
+
+		    if (requires & BFE_VARIABLES) {
+			flag = parse_string(flag, variables);
+		    }
+
 		if (flag[0]) {
 		strarray_add_case(actionflags,flag);
 		}
@@ -1584,6 +1658,10 @@ int sieve_eval_bc(sieve_execute_t *exe, int is_incl, sieve_interp_t *i,
 
 	    ip = unwrap_string(bc, ip, &data, NULL);
 
+	    if (requires & BFE_VARIABLES) {
+		data = parse_string(data, variables);
+	    }
+
 	    res = do_fileinto(actions, data, !copy, actionflags);
 
 	    if (res == SIEVE_RUN_ERROR)
@@ -1602,6 +1680,10 @@ int sieve_eval_bc(sieve_execute_t *exe, int is_incl, sieve_interp_t *i,
 	{
 	    ip = unwrap_string(bc, ip, &data, NULL);
 
+	    if (requires & BFE_VARIABLES) {
+		data = parse_string(data, variables);
+	    }
+
 	    res = do_redirect(actions, data, !copy);
 
 	    if (res == SIEVE_RUN_ERROR)
@@ -1616,7 +1698,7 @@ int sieve_eval_bc(sieve_execute_t *exe, int is_incl, sieve_interp_t *i,
 	    int result;
 	   
 	    ip+=1;
-	    result=eval_bc_test(i, m, bc, &ip, variables, version);
+	    result=eval_bc_test(i, m, bc, &ip, variables, version, requires);
 	    
 	    if (result<0) {
 		*errmsg = "Invalid test";
@@ -1659,6 +1741,9 @@ int sieve_eval_bc(sieve_execute_t *exe, int is_incl, sieve_interp_t *i,
 	    for (x=0; x<list_len; x++) {
 		ip = unwrap_string(bc, ip, &data, NULL);
 		
+		if (requires & BFE_VARIABLES) {
+		    data = parse_string(data, variables);
+		}
 		strarray_add_case(variables->var, data);
 	    } 
 	    break;
@@ -1675,6 +1760,11 @@ int sieve_eval_bc(sieve_execute_t *exe, int is_incl, sieve_interp_t *i,
 
 		for (x=0; x<list_len; x++) {
 		    ip = unwrap_string(bc, ip, &data, NULL);
+
+		    if (requires & BFE_VARIABLES) {
+			data = parse_string(data, variables);
+		    }
+
 		    if (data[0]) {
 		    strarray_add_case(variables->var, data);
 		    }
@@ -1693,6 +1783,10 @@ int sieve_eval_bc(sieve_execute_t *exe, int is_incl, sieve_interp_t *i,
 	    for (x=0; x<list_len; x++) {
 		ip = unwrap_string(bc, ip, &data, NULL);
 
+		if (requires & BFE_VARIABLES) {
+		    data = parse_string(data, variables);
+		}
+
 		strarray_remove_all_case(variables->var, data);
 	    } 
 	    break;
@@ -1710,8 +1804,19 @@ int sieve_eval_bc(sieve_execute_t *exe, int is_incl, sieve_interp_t *i,
 	    /* method */
 	    ip = unwrap_string(bc, ip, &method, NULL);
 
+	/* RFC 5435 (Sieve Extension: Notifications)
+	 * Section 8. Security Considerations
+	 * implementations SHOULD NOT allow the use of variables containing
+	 * values extracted from the email message in the "method" parameter to
+	 * the "notify" action.
+	 */
+
 	    /* id */
 	    ip = unwrap_string(bc, ip, &id, NULL);
+
+	    /* draft-ietf-sieve-notify-12:
+	     * Changes since draft-ietf-sieve-notify-00
+	     * Removed the :id parameter to the notify action. */
 
 	    /*options*/
 	    options=bc_makeArray(bc, &ip); 
@@ -1741,6 +1846,10 @@ int sieve_eval_bc(sieve_execute_t *exe, int is_incl, sieve_interp_t *i,
 	    /* message */
 	    ip = unwrap_string(bc, ip, &message, NULL);
 	  
+	    if (requires & BFE_VARIABLES) {
+		message = parse_string(message, variables);
+	    }
+
 	    res = do_notify(notify_list, id, method, options,
 			    priority, message);
 
@@ -1809,6 +1918,10 @@ int sieve_eval_bc(sieve_execute_t *exe, int is_incl, sieve_interp_t *i,
 	    }
 	    
 	    ip = unwrap_string(bc, ip, &pattern, NULL);
+
+	    /* draft-ietf-sieve-notify-12:
+	     * Changes since draft-ietf-sieve-notify-00
+	     * Removed denotify action. */
 	  
 	    if (comparator == B_REGEX)
 	    {	
@@ -1847,12 +1960,16 @@ int sieve_eval_bc(sieve_execute_t *exe, int is_incl, sieve_interp_t *i,
 	    x = ntohl(bc[ip].len);
 	    
 	    respond = shouldRespond(m, i, x, bc, ip+2,
-				    &fromaddr, &toaddr);
+				    &fromaddr, &toaddr, variables, requires);
 	    
 	    ip = ntohl(bc[ip+1].value) / 4;
 	    if (respond==SIEVE_OK)
 	    {
 		ip = unwrap_string(bc, ip, &data, NULL);
+
+		if (requires & BFE_VARIABLES) {
+		    data = parse_string(data, variables);
+		}
 
 		if (!data) 
 		{
@@ -1874,6 +1991,10 @@ int sieve_eval_bc(sieve_execute_t *exe, int is_incl, sieve_interp_t *i,
 
 		ip = unwrap_string(bc, ip, &message, NULL);
 
+		    if (requires & BFE_VARIABLES) {
+			message = parse_string(message, variables);
+		    }
+
 		seconds = ntohl(bc[ip].value);
 		if (op == B_VACATION_ORIG) {
 		    seconds *= DAY2SEC;
@@ -1885,6 +2006,10 @@ int sieve_eval_bc(sieve_execute_t *exe, int is_incl, sieve_interp_t *i,
 		if (version >= 0x05) {
 		    ip = unwrap_string(bc, ip, &data, NULL);
 
+		    if (requires & BFE_VARIABLES) {
+			data = parse_string(data, variables);
+		    }
+
 		    if (data) {
 			/* user specified from address */
 			free(fromaddr);
@@ -1892,6 +2017,10 @@ int sieve_eval_bc(sieve_execute_t *exe, int is_incl, sieve_interp_t *i,
 		    }
 
 		    ip = unwrap_string(bc, ip, &data, NULL);
+
+		    if (requires & BFE_VARIABLES) {
+			data = parse_string(data, variables);
+		    }
 
 		    if (data) {
 			/* user specified handle */
@@ -1939,6 +2068,10 @@ int sieve_eval_bc(sieve_execute_t *exe, int is_incl, sieve_interp_t *i,
 
 	    ip = unwrap_string(bc, ip+1, &data, NULL);
 
+	    if (requires & BFE_VARIABLES) {
+		data = parse_string(data, variables);
+	    }
+
 	    res = i->getinclude(sc, data, isglobal, fpath, sizeof(fpath));
 	    if (res != SIEVE_OK) {
 		if (isoptional == 0)
@@ -1976,11 +2109,44 @@ int sieve_eval_bc(sieve_execute_t *exe, int is_incl, sieve_interp_t *i,
 
 	case B_SET:/*24*/
 	{
+	    /* TODO: :encodeurl
+   RFC 5435 (Sieve Extension: Notifications)
+   6.  Modifier encodeurl to the 'set' Action
+
+   Usage:  ":encodeurl"
+
+   When the Sieve script specifies both "variables" [Variables] and
+   "enotify" capabilities in the "require", a new "set" action modifier
+   (see [Variables]) ":encodeurl" becomes available to Sieve scripts.
+   This modifier performs percent-encoding of any octet in the string
+   that doesn't belong to the "unreserved" set (see [URI]).  The
+   percent-encoding procedure is described in [URI].
+
+   The ":encodeurl" modifier has precedence 15.
+
+   Example 6:
+       require ["enotify", "variables"];
+
+       set :encodeurl "body_param" "Safe body&evil=evilbody";
+
+       notify "mailto:tim@example.com?body=${body_param}";
+
+	     */
+
 	    int modifiers = ntohl(bc[ip++].value);
 	    variable_list_t *variable = NULL;
 
 	    /* get the variable name */
 	    ip = unwrap_string(bc, ip, &data, NULL);
+	    /* RFC 5229, 3. Interpretation of Strings
+	Strings where no variable substitutions take place are referred to as
+	constant strings.  Future extensions may specify that passing non-
+	constant strings as arguments to its actions or tests is an error.
+
+	The name MUST be a constant string and conform
+	to the syntax of variable-name.
+	(this is done in the parser in sieve.y)
+	     */
 
 	    /* select or create the variable */
 	    variable = varlist_select(variables, data);
