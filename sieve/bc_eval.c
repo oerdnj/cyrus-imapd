@@ -1748,6 +1748,7 @@ int sieve_eval_bc(sieve_execute_t *exe, int is_incl, sieve_interp_t *i,
 		}
 		strarray_add_case(variables->var, data);
 	    } 
+	    verify_flaglist(variables->var);
 	    break;
 	}
 
@@ -1772,13 +1773,15 @@ int sieve_eval_bc(sieve_execute_t *exe, int is_incl, sieve_interp_t *i,
 		    }
 		} 
 	    
+	    verify_flaglist(variables->var);
 	    break;
 	}
 
 	case B_REMOVEFLAG:/*11*/
 	{
-	    int x;
+	    int x, y;
 	    int list_len=ntohl(bc[ip].len);
+	    strarray_t temp = STRARRAY_INITIALIZER;
 
 	    ip+=2; /* skip opcode, list_len, and list data len */
 
@@ -1789,7 +1792,15 @@ int sieve_eval_bc(sieve_execute_t *exe, int is_incl, sieve_interp_t *i,
 		    data = parse_string(data, variables);
 		}
 
+		strarray_append(&temp, data);
+		verify_flaglist(&temp);
+
+		for (y = 0; y < temp.count; y++) {
+		    data = temp.data[y];
 		strarray_remove_all_case(variables->var, data);
+		}
+
+		strarray_fini(&temp);
 	    } 
 	    break;
 	}
