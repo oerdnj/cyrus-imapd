@@ -12,6 +12,7 @@
 #include "varlist.h"
 
 EXPORTED int is_identifier(char *s);
+EXPORTED int is_number(char *s);
 EXPORTED char *parse_string(const char *s, variable_list_t *vars);
 
 #endif /* SIEVE_GRAMMAR_H_ */
