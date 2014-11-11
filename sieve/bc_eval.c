@@ -1016,8 +1016,14 @@ envelope_err:
 		}
 	    }
 	}
-		printf("B_hasflag: %s\n\n", strarray_join(varlist_select(variables,
-			VL_MATCH_VARS)->var, ", "));
+	{
+	    /* for debugging purposes only */
+	    char *temp;
+	    temp = strarray_join(varlist_select(variables, VL_MATCH_VARS)->var,
+		    ", ");
+	    printf("B_hasflag: %s\n\n", temp);
+	    free (temp);
+	}
 	}
 
 	/* Update IP */
@@ -1578,7 +1584,7 @@ int sieve_eval_bc(sieve_execute_t *exe, int is_incl, sieve_interp_t *i,
 		    flag = parse_string(flag, variables);
 		}
 
-		if (flag && flag[0]) {
+		if (flag[0]) {
 		strarray_add_case(actionflags,flag);
 		}
 	    }
@@ -1637,7 +1643,7 @@ int sieve_eval_bc(sieve_execute_t *exe, int is_incl, sieve_interp_t *i,
 			flag = parse_string(flag, variables);
 		    }
 
-		if (flag && flag[0]) {
+		if (flag[0]) {
 		strarray_add_case(actionflags,flag);
 		}
 	    }
