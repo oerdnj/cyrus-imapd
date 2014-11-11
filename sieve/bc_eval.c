@@ -1016,6 +1016,8 @@ envelope_err:
 		}
 	    }
 	}
+		printf("B_hasflag: %s\n\n", strarray_join(varlist_select(variables,
+			VL_MATCH_VARS)->var, ", "));
 	}
 
 	/* Update IP */
@@ -2176,7 +2178,7 @@ int sieve_eval_bc(sieve_execute_t *exe, int is_incl, sieve_interp_t *i,
 	    data = parse_string(data, variables);
 	    /* TODO: apply modifiers to data */
 	    strarray_append(variable->var, data);
-	    printf("%s\n\n", strarray_nth(variable->var, -1));
+	    printf("\nB_SET:%s\n\n", strarray_nth(variable->var, -1));
 
 	    actionflags = NULL;
 	    break;
