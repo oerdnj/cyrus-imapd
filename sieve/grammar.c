@@ -130,8 +130,9 @@ EXPORTED char *parse_string(const char *s, variable_list_t *vars)
     if ((test_str = strarray_join(&stringparts, ""))) {
 	strarray_appendm(varlist_select(vars, VL_PARSED_STRINGS)->var, test_str);
     } else {
-	test_str = xstrdup("");
-	strarray_appendm(varlist_select(vars, VL_PARSED_STRINGS)->var, test_str);
+	variable = varlist_select(vars, VL_PARSED_STRINGS);
+	strarray_append(variable->var, "");
+	test_str = variable->var->data[variable->var->count-1];
     }
     strarray_fini(&stringparts);
 
