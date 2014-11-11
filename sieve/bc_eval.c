@@ -1576,7 +1576,7 @@ int sieve_eval_bc(sieve_execute_t *exe, int is_incl, sieve_interp_t *i,
 		    flag = parse_string(flag, variables);
 		}
 
-		if (flag[0]) {
+		if (flag && flag[0]) {
 		strarray_add_case(actionflags,flag);
 		}
 	    }
@@ -1635,7 +1635,7 @@ int sieve_eval_bc(sieve_execute_t *exe, int is_incl, sieve_interp_t *i,
 			flag = parse_string(flag, variables);
 		    }
 
-		if (flag[0]) {
+		if (flag && flag[0]) {
 		strarray_add_case(actionflags,flag);
 		}
 	    }
