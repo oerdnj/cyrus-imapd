@@ -1628,9 +1628,6 @@ int sieve_eval_bc(sieve_execute_t *exe, int is_incl, sieve_interp_t *i,
 		
 		res = do_addflag(actions, data);
 		strarray_add_case(workingvars->var, data);
-
-		if (res == SIEVE_RUN_ERROR)
-		    *errmsg = "addflag can not be used with Reject";
 	    } 
 	    break;
 	}
@@ -1646,20 +1643,13 @@ int sieve_eval_bc(sieve_execute_t *exe, int is_incl, sieve_interp_t *i,
 	    res = do_setflag(actions);
 	    strarray_truncate(workingvars->var, 0);
 
-	    if (res == SIEVE_RUN_ERROR) {
-		*errmsg = "setflag can not be used with Reject";
-	    } else {
 		for (x=0; x<list_len; x++) {
 		    ip = unwrap_string(bc, ip, &data, NULL);
 		    if (data[0]) {
 		    res = do_addflag(actions, data);
 		    strarray_add_case(workingvars->var, data);
 		    }
-
-		    if (res == SIEVE_RUN_ERROR)
-			*errmsg = "setflag can not be used with Reject";
 		} 
-	    }
 	    
 	    break;
 	}
@@ -1676,9 +1666,6 @@ int sieve_eval_bc(sieve_execute_t *exe, int is_incl, sieve_interp_t *i,
 
 		res = do_removeflag(actions, data);
 		strarray_remove_all_case(workingvars->var, data);
-
-		if (res == SIEVE_RUN_ERROR)
-		    *errmsg = "removeflag can not be used with Reject";
 	    } 
 	    break;
 	}
