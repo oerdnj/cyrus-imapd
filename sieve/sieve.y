@@ -670,6 +670,28 @@ test:     ANYOF testlist	 { $$ = new_test(ANYOF); $$->u.tl = $2; }
 	    yyerror(parse_script, "variables MUST be enabled with \"require\"");
 	    YYERROR;
 	}
+	if (!verify_stringlist(parse_script, $3, verify_utf8)) {
+	    YYERROR; /* vu should call yyerror() */
+	}
+	if (!verify_stringlist(parse_script, $4, verify_utf8)) {
+	    YYERROR; /* vu should call yyerror() */
+	}
+	$2 = canon_htags($2);
+#ifdef ENABLE_REGEX
+	if ($2->comptag == REGEX) {
+	    if (!(verify_regexs(parse_script, $4, $2->comparator))) {
+		YYERROR;
+	    }
+	}
+#endif
+	$$ = build_header($1, $2, $3, $4);
+    }
+    
+    | HASFLAG htags stringlist stringlist {
+	if (!parse_script->support.variables) {
+	    yyerror(parse_script, "variables MUST be enabled with \"require\"");
+	    YYERROR;
+	}
 	if (!verify_stringlist(parse_script, $3, verify_identifier)) {
 	    YYERROR; /* vi should call yyerror() */
 	}
@@ -684,7 +706,7 @@ test:     ANYOF testlist	 { $$ = new_test(ANYOF); $$->u.tl = $2; }
 	    }
 	}
 #endif
-	$$ = build_header($1, $2, $3, $4);
+	$$ = build_header(HASFLAG, $2, $3, $4);
     }
 
 	| HASFLAG htags stringlist

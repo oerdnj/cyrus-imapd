@@ -75,7 +75,7 @@ set "mystring" "string1";
 set "mystring2" "00${mystring}00";
 set "mystring3" "${0} ${1} ${2} ${mystring2}";
 
-if string "myvar2" "my*val2" {
+if string :matches "${myvar2}" "my*val2" {
 fileinto :copy "INBOX.stringtest.true${1}";
 }
 
