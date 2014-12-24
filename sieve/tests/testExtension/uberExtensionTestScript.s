@@ -271,5 +271,43 @@ if hasflag :matches "?la?g*"
 else
 {redirect "me+good.hasflag.neg@blah.com";}
 
+
+      set "state" "${state} pending";
+      if string :matches " ${state} " "* pending *" {
+redirect "string.matches.true+good@blah.com";
+      } else
+{redirect "string.matches.false+bad@blah.com";}
+      if string :matches " ${state}" "* pending *" {
+redirect "string.matches.true+bad@blah.com";
+      } else {
+redirect "string.matches.false+good@blah.com";
+}
+
+if string " mystring pending" "* pending *"
+{redirect "me+bad.string.false@blah.com";}
+else
+{redirect "me+good.string.false@blah.com";}
+
+
+if hasflag :matches "state" "?*?*?*?*?*?"
+{redirect "me+good.hasflag.match.pos@blah.com";}
+else
+{redirect "me+bad.hasflag.match.pos@blah.com";}
+
+if hasflag :contains "state" "pend"
+{redirect "me+good.hasflag.contains.pos@blah.com";}
+else
+{redirect "me+bad.hasflag.contains.pos@blah.com";}
+
+if hasflag "state" "pending"
+{redirect "me+good.hasflag.is.pos@blah.com";}
+else
+{redirect "me+bad.hasflag.is.pos@blah.com";}
+
+if hasflag :matches "?la?g*"
+{redirect "me+bad.hasflag.neg@blah.com";}
+else
+{redirect "me+good.hasflag.neg@blah.com";}
+
 }
 
