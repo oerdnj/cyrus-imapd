@@ -1307,6 +1307,8 @@ sieve_libcyrus_sieve_la_SOURCES = \
 	sieve/sieve.y \
 	sieve/tree.c \
 	sieve/tree.h \
+	sieve/variables.c \
+	sieve/variables.h \
 	sieve/varlist.c \
 	sieve/varlist.h
 sieve_libcyrus_sieve_la_LIBADD = $(COM_ERR_LIBS) lib/libcyrus_min.la lib/libcyrus.la
