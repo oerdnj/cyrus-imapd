@@ -1638,6 +1638,7 @@ int sieve_eval_bc(sieve_execute_t *exe, int is_incl, sieve_interp_t *i,
 	 */
 	int copy = 0;
 	strarray_t *actionflags = NULL;
+	variable_list_t *variable = NULL;
 
 	op=ntohl(bc[ip++].op);
 	switch(op) {
@@ -2209,7 +2210,6 @@ int sieve_eval_bc(sieve_execute_t *exe, int is_incl, sieve_interp_t *i,
 	case B_SET:/*24*/
 	{
 	    int modifiers = ntohl(bc[ip++].value);
-	    variable_list_t *variable = NULL;
 
 	    /* get the variable name */
 	    ip = unwrap_string(bc, ip, &data, NULL);
