@@ -384,6 +384,10 @@ void dump(bytecode_info_t *d, int level)
 
 	case B_SETFLAG:
 	    printf("%d: SETFLAG\n",i);
+	    print_spaces(level+1);
+	    printf("VARIABLE({%d}%s)\n",
+		   d->data[i+1].len,d->data[i+2].str);
+	    i+=2;
 	    i=dump_sl(d,++i, level);
 	    break;
 

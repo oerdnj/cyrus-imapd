@@ -130,9 +130,9 @@ enum bytecode {
     B_MARK,		/* require imapflags */
     B_UNMARK,		/* require imapflags */
 
-    B_ADDFLAG,		/* require imap4flags */
-    B_SETFLAG,		/* require imap4flags */
-    B_REMOVEFLAG,	/* require imap4flags */
+    B_ADDFLAG_ORIG,	/* legacy addflag w/o support for variables */
+    B_SETFLAG_ORIG,	/* legacy setflag w/o support for variables */
+    B_REMOVEFLAG_ORIG,	/* legacy removeflag w/o support for variables */
 
     B_NOTIFY,		/* require notify */
     B_DENOTIFY,		/* require notify */
@@ -152,7 +152,11 @@ enum bytecode {
     B_KEEP,
     B_FILEINTO,		/* require fileinto */
 
-    B_SET		/* require variables */
+    B_SET,		/* require variables */
+
+    B_ADDFLAG,		/* require imap4flags */
+    B_SETFLAG,		/* require imap4flags */
+    B_REMOVEFLAG	/* require imap4flags */
 };
 
 enum bytecode_comps {
