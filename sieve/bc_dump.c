@@ -383,22 +383,24 @@ void dump(bytecode_info_t *d, int level)
 	    break;
 
 	case B_SETFLAG:
-	    printf("%d: SETFLAG\n",i);
+	case B_ADDFLAG:
+	case B_REMOVEFLAG:
+	    switch (d->data[i].op) {
+	    case B_SETFLAG:
+		printf("%d: SETFLAG\n",i);
+		break;
+	    case B_ADDFLAG:
+		printf("%d: ADDFLAG\n",i);
+		break;
+	    case B_REMOVEFLAG:
+		printf("%d: REMOVEFLAG\n",i);
+		break;
+	    }
 	    print_spaces(level+1);
 	    printf("VARIABLE({%d}%s)\n",
 		   d->data[i+1].len,d->data[i+2].str);
 	    i+=2;
 	    i=dump_sl(d,++i, level);
-	    break;
-
-	case B_ADDFLAG:
-	    printf("%d: ADDFLAG\n",i);
-	    i=dump_sl(d,++i,level);
-	    break;
-
-	case B_REMOVEFLAG:
-	    printf("%d: REMOVEFLAG\n",i);
-	    i=dump_sl(d,++i,level);
 	    break;
 
 	case B_DENOTIFY:

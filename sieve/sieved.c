@@ -564,6 +564,7 @@ static void dump2(bytecode_input_t *d, int bc_len)
     {
 	int op;
 	int copy = 0;
+	int supports_variables = 0;
 
 	printf("%d: ",i);
 
@@ -636,23 +637,32 @@ static void dump2(bytecode_input_t *d, int bc_len)
 	    break;
 
 	case B_ADDFLAG: /*25*/
-	case B_ADDFLAG_ORIG: /*9*/
-	    printf("ADDFLAG  {%d}\n",ntohl(d[i].len));
-	    i=write_list(ntohl(d[i].len),i+1,d);
-	    break;
-
 	case B_SETFLAG: /*26*/
-	    i = unwrap_string(d, i, &data, &len);
-	    printf("SETFLAG VARIABLE({%d}%s)\n", len, data);
-	    /* fall through */
-	case B_SETFLAG_ORIG: /*10*/
-	    printf("SETFLAG FLAGS {%d}\n",ntohl(d[i].len));
-	    i=write_list(ntohl(d[i].len),i+1,d);
-	    break;
-	    
 	case B_REMOVEFLAG: /*27*/
+	    i = unwrap_string(d, i, &data, &len);
+	    supports_variables = 1;
+	    /* fall through */
+	case B_ADDFLAG_ORIG: /*9*/
+	case B_SETFLAG_ORIG: /*10*/
 	case B_REMOVEFLAG_ORIG: /*11*/
-	    printf("REMOVEFLAG  {%d}\n",ntohl(d[i].len));
+	    switch (op) {
+	    case B_ADDFLAG_ORIG:
+	    case B_ADDFLAG:
+		printf("ADDFLAG ",i);
+		break;
+	    case B_SETFLAG:
+	    case B_SETFLAG_ORIG:
+		printf("SETFLAG ",i);
+		break;
+	    case B_REMOVEFLAG:
+	    case B_REMOVEFLAG_ORIG:
+		printf("REMOVEFLAG ",i);
+		break;
+	    }
+	    if (supports_variables) {
+		printf("VARIABLE({%d}%s) ", len, data);
+	    }
+	    printf("FLAGS {%d}\n",ntohl(d[i].len));
 	    i=write_list(ntohl(d[i].len),i+1,d);
 	    break;
 	    
