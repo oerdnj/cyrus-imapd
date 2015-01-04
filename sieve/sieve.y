@@ -247,7 +247,7 @@ extern void sieverestart(FILE *f);
 %token <sval> STRING
 %token IF ELSIF ELSE
 %token REJCT FILEINTO REDIRECT KEEP STOP DISCARD VACATION REQUIRE
-%token SETFLAG ADDFLAG REMOVEFLAG MARK UNMARK HASFLAG FLAGS
+%token MARK UNMARK HASFLAG FLAGS
 %token NOTIFY DENOTIFY
 %token ANYOF ALLOF EXISTS SFALSE STRUE HEADER NOT SIZE ADDRESS ENVELOPE BODY
 %token COMPARATOR IS CONTAINS MATCHES REGEX COUNT VALUE OVER UNDER
@@ -261,6 +261,7 @@ extern void sieverestart(FILE *f);
 %token DATE CURRENTDATE INDEX LAST ZONE ORIGINALZONE
 %token YEAR MONTH DAY JULIAN HOUR MINUTE SECOND TIME ISO8601 STD11 WEEKDAY
 %token <nval> STRINGT SET LOWER UPPER LOWERFIRST UPPERFIRST QUOTEWILDCARD LENGTH
+%token <nval> SETFLAG ADDFLAG REMOVEFLAG 
 
 %type <cl> commands command action elsif block
 %type <sl> stringlist strings
@@ -280,6 +281,7 @@ extern void sieverestart(FILE *f);
 %type <stag> stags
 %type <nval> mod40 mod30 mod20 mod10
 %type <sval> flagtags
+%type <nval> flagaction
 
 %name-prefix="sieve"
 %defines
@@ -353,7 +355,7 @@ action: REJCT STRING             { if (!parse_script->support.reject) {
 				   }
   				   $$ = build_vacation(VACATION,
 					    canon_vtags(parse_script, $2), $3); }
-    | SETFLAG flagtags stringlist {
+    | flagaction flagtags stringlist {
 	if (!(parse_script->support.imapflags ||
 		parse_script->support.imap4flags)) {
 	    yyerror(parse_script, "imap4flags MUST be enabled with "
@@ -366,30 +368,8 @@ action: REJCT STRING             { if (!parse_script->support.reject) {
 	if (!$3->count) {
 	    strarray_add($3, "");
 	}
-	$$ = build_flag(SETFLAG, $2, $3);
+	$$ = build_flag($1, $2, $3);
     }
-         | ADDFLAG stringlist     { if (!(parse_script->support.imapflags ||
-					parse_script->support.imap4flags)) {
-                                    yyerror(parse_script, "imap4flags MUST be enabled with \"require\"");
-                                    YYERROR;
-                                    }
-                                  verify_flaglist($2);
-                                  if(!$2->count) {
-                                      strarray_add($2, "");
-                                  }
-                                  $$ = new_command(ADDFLAG);
-                                  $$->u.sl = $2; }
-         | REMOVEFLAG stringlist  { if (!(parse_script->support.imapflags ||
-					parse_script->support.imap4flags)) {
-                                    yyerror(parse_script, "imap4flags MUST be enabled with \"require\"");
-                                    YYERROR;
-                                    }
-                                  verify_flaglist($2);
-                                  if(!$2->count) {
-                                      strarray_add($2, "");
-                                  }
-                                  $$ = new_command(REMOVEFLAG);
-                                  $$->u.sl = $2; }
          | MARK                   { if (!parse_script->support.imapflags) {
                                     yyerror(parse_script, "imapflags MUST be enabled with \"require\"");
                                     YYERROR;
@@ -452,6 +432,12 @@ action: REJCT STRING             { if (!parse_script->support.reject) {
 	$2 = canon_stags($2);
 	$$ = build_set($1, $2, $3, $4);
     }
+;
+
+flagaction:
+    ADDFLAG
+    | SETFLAG
+    | REMOVEFLAG
 ;
 
 flagtags:
