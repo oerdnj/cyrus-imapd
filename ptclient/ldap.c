@@ -741,12 +741,14 @@ static int ptsmodule_tokenize_domains(
  *   %R   = prepend '@' to domain
  *   %1-9 = domain tokens (%1 = tld, %2 = domain when %d = domain.tld)
  *   %D   = user DN
+ *   %B   = base DN
  * Note: calling function must free memory.
  */
 static int ptsmodule_expand_tokens(
     const char *pattern,
     const char *username,
     const char *dn,
+    const char *base,
     char **result)
 {
     char *buf;
@@ -757,7 +759,7 @@ static int ptsmodule_expand_tokens(
 
     /* to permit multiple occurences of username and/or realm in filter */
     /* and avoid memory overflow in filter build [eg: (|(uid=%u)(userid=%u)) ] */
-    int percents, user_len, dn_len, maxparamlength;
+    int percents, user_len, dn_len, base_len, maxparamlength;
 
     if (pattern == NULL) {
         syslog(LOG_ERR, "filter pattern not setup");
@@ -767,10 +769,12 @@ static int ptsmodule_expand_tokens(
     /* find the longest param of username and realm,
        do not worry about domain because it is always shorter
        then username                                           */
-    user_len=username ? strlen(username) : 0;
-    dn_len=dn ? strlen(dn) : 0;
+    user_len = username ? strlen(username) : 0;
+    dn_len = dn ? strlen(dn) : 0;
+    base_len = base ? strlen(base) : 0;
 
     maxparamlength = PTSM_MAX(user_len+1, dn_len); /* +1 for %R when '@' is prepended */
+    maxparamlength = PTSM_MAX(maxparamlength, base_len);
 
     /* find the number of occurences of percent sign in filter */
     for( percents=0, buf=(char *)pattern; *buf; buf++ ) {
@@ -864,6 +868,16 @@ static int ptsmodule_expand_tokens(
                 } else
                     syslog(LOG_DEBUG, "dn not available.");
                 break;
+            case 'B':
+                if (ISSET(base)) {
+                    rc = ptsmodule_escape(base, strlen(base), &ebuf);
+                    if (rc == PTSM_OK) {
+                        strcat(buf,ebuf);
+                        free(ebuf);
+                    }
+                } else
+                    syslog(LOG_DEBUG, "base not available.");
+                break;
             default:
                 break;
         }
@@ -943,7 +957,7 @@ static int ptsmodule_get_dn(
 #endif
 
     {
-        rc = ptsmodule_expand_tokens(ptsm->filter, canon_id, NULL, &filter);
+        rc = ptsmodule_expand_tokens(ptsm->filter, canon_id, NULL, NULL, &filter);
         if (rc != PTSM_OK)
             return rc;
 
@@ -999,7 +1013,7 @@ static int ptsmodule_get_dn(
 	    }
 
 	} else {
-            rc = ptsmodule_expand_tokens(ptsm->base, canon_id, NULL, &base);
+            rc = ptsmodule_expand_tokens(ptsm->base, canon_id, NULL, NULL, &base);
 	    if (rc != PTSM_OK)
 	        return rc;
 	}
@@ -1211,13 +1225,13 @@ static int ptsmodule_make_authstate_filter(
         return rc;
     }
 
-    rc = ptsmodule_expand_tokens(ptsm->member_filter, canon_id, dn, &filter);
+    rc = ptsmodule_expand_tokens(ptsm->member_filter, canon_id, dn, ptsm->base, &filter);
     if (rc != PTSM_OK) {
         *reply = "ptsmodule_expand_tokens() failed for member filter";
         goto done;
     }
 
-    rc = ptsmodule_expand_tokens(ptsm->member_base, canon_id, dn, &base);
+    rc = ptsmodule_expand_tokens(ptsm->member_base, canon_id, dn, ptsm->base, &base);
     if (rc != PTSM_OK) {
         *reply = "ptsmodule_expand_tokens() failed for member search base";
         goto done;
@@ -1330,7 +1344,7 @@ static int ptsmodule_make_authstate_group(
         return rc;
     }
 
-    rc = ptsmodule_expand_tokens(ptsm->group_filter, canon_id+6, NULL, &filter);
+    rc = ptsmodule_expand_tokens(ptsm->group_filter, canon_id+6, NULL, ptsm->base, &filter);
     if (rc != PTSM_OK) {
         *reply = "ptsmodule_expand_tokens() failed for group filter";
         goto done;
@@ -1393,7 +1407,7 @@ static int ptsmodule_make_authstate_group(
 	    }
 	}
     } else {
-	rc = ptsmodule_expand_tokens(ptsm->group_base, canon_id, NULL, &base);
+	rc = ptsmodule_expand_tokens(ptsm->group_base, canon_id, NULL, ptsm->base, &base);
 	if (rc != PTSM_OK)
 	    return rc;
     }
@@ -1401,7 +1415,7 @@ static int ptsmodule_make_authstate_group(
     syslog(LOG_DEBUG, "(groups) about to search %s for %s", base, filter);
 
 
-    rc = ptsmodule_expand_tokens(ptsm->group_base, canon_id+6, NULL, &base);
+    rc = ptsmodule_expand_tokens(ptsm->group_base, canon_id+6, NULL, ptsm->base, &base);
     if (rc != PTSM_OK) {
         *reply = "ptsmodule_expand_tokens() failed for group search base";
         goto done;
