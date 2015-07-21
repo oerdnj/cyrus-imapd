@@ -237,6 +237,10 @@ libexec_PROGRAMS += imap/sync_server
 sbin_PROGRAMS += imap/sync_client imap/sync_reset
 endif # REPLICATION
 
+if BACKUP
+libexec_PROGRAMS += backup/backupd
+endif # BACKUP
+
 if HAVE_SSL
 sbin_PROGRAMS += imap/tls_prune
 endif # HAVE_SSL
@@ -1232,6 +1236,7 @@ imap_sync_reset_LDADD = $(LD_UTILITY_ADD)
 
 imap_sync_server_SOURCES = imap/mutex_fake.c imap/sync_server.c imap/sync_support.c imap/sync_support.h master/service.c
 imap_sync_server_LDADD = $(LD_SERVER_ADD)
+
 else
 EXTRA_DIST += \
 	imap/sync_client.c \
@@ -1241,6 +1246,15 @@ EXTRA_DIST += \
 	imap/sync_support.h
 
 endif # REPLICATION
+
+if BACKUP
+backup_backupd_SOURCES = imap/mutex_fake.c backup/backupd.c imap/sync_support.c imap/sync_support.h master/service.c
+backup_backupd_LDADD = $(LD_SERVER_ADD)
+else
+EXTRA_DIST += \
+    backup/backupd.c
+
+endif # BACKUP
 
 imap_tls_prune_SOURCES = imap/cli_fatal.c imap/mutex_fake.c imap/tls_prune.c
 imap_tls_prune_LDADD = $(LD_UTILITY_ADD)
