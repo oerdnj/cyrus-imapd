@@ -1,0 +1,121 @@
+Notes for backup implementation
+
+Backup index database (one per user):
+
+backup:
+    int id
+    timestamp ts
+    int gzchunk_id
+
+gzchunk:
+    int id
+    off_t start
+    size_t len
+
+backup_mailbox:
+    int id
+    int backup_id
+    char uniqueid
+    char mboxname
+    int last_uid
+    int highestmodseq
+    int recentuid
+    timestamp recenttime
+    timestamp last_appenddate
+    ? pop3_last_login
+    ? pop3_show_after
+    timestamp uidvalidity
+    char partition
+    char acl
+    char options
+    int sync_crc
+    int sync_crc_annot
+    char quotaroot
+    int xconvmodseq
+    [annotations]
+
+mailbox_record:
+    char mailbox_uniqueid
+    int uid
+    int modseq
+    timestamp last_updated
+    [flags]
+    timestamp internaldate
+    int size
+    char guid
+    [annotations]
+    boolean expunged # duplicated from [flags]?
+
+message:
+    int id
+    char guid
+    int gzchunk_id
+    off_t start
+    size_t len
+
+sieve scripts and messages are both identified by a GUID
+but APPLY SIEVE doesn't take a GUID, it seems to be generated locally?
+the GUID in the response to APPLY SIEVE is generated in the process of
+reading the script from disk (sync_sieve_list_generate)
+
+
+locking
+-------
+
+foo.gz:   only one process may write to it, but anyone can read it
+foo.idx:  only writer of foo.gz may write to it, but anyone can read it
+foo.lock: holder can write, everyone else can read or wait
+
+or, just use a normal flock/fcntl lock on the .gz file and only open the index
+if that lock succeeded??
+
+backup:   needs to append foo.fz and update foo.idx
+reindex:  only needs to read foo.gz, but needs a write lock to prevent writes
+          while it does so. needs to write to (replace) foo.idx
+compress: needs to re-write foo.gz and foo.idx
+restore:  needs to read
+
+
+
+mailboxes database ??
+
+
+
+reindex
+-------
+
+* convert user mailbox name to backup name
+* complain if there's no backup data file?
+* lock, rename .idx to .idx.old, init new .idx
+* foreach file chunk:
+*   timestamp is from first line in chunk
+*   complain if timestamp has gone backwards?
+*   index records from chunk
+* unlock
+* clean up .idx.old
+
+on error:
+* discard partial new index
+* restore .idx.old
+* bail out
+
+
+backupd
+-------
+
+cmdloop:
+* (periodic cleanup)
+* read command, determine backup name
+* already holding lock ? bump timestamp : obtain lock
+* write data to gzname
+* index data
+
+periodic cleanup:
+* check timestamp of each held lock
+* if stale (define: stale?), release
+
+sync restart:
+* release each held lock
+
+exit:
+* release each held lock
