@@ -116,6 +116,7 @@ EXTRA_PROGRAMS = doc/text/htmlstrip
 check_PROGRAMS =
 libexec_PROGRAMS =
 sbin_PROGRAMS =
+noinst_PROGRAMS =
 CLEANFILES =
 EXTRA_DIST = \
 	$(wildcard tools/vzic/*)
@@ -239,6 +240,7 @@ endif # REPLICATION
 
 if BACKUP
 libexec_PROGRAMS += backup/backupd
+noinst_PROGRAMS += backup/reindex
 endif # BACKUP
 
 if HAVE_SSL
@@ -1250,9 +1252,13 @@ endif # REPLICATION
 if BACKUP
 backup_backupd_SOURCES = imap/mutex_fake.c backup/backupd.c imap/sync_support.c imap/sync_support.h master/service.c
 backup_backupd_LDADD = $(LD_SERVER_ADD)
+
+backup_reindex_SOURCES = backup/reindex.c
+backup_reindex_LDADD =
 else
 EXTRA_DIST += \
-    backup/backupd.c
+    backup/backupd.c \
+    backup/reindex.c
 
 endif # BACKUP
 
