@@ -590,9 +590,10 @@ static int cap_setuid(int uid, int is_master)
 EXPORTED int become_cyrus(int is_master)
 {
     struct passwd *p;
-    int newuid, newgid;
+    uid_t newuid;
+    gid_t newgid;
     int result;
-    static int uid = 0;
+    static uid_t uid = 0;
 
     if (uid) return cap_setuid(uid, is_master);
 
