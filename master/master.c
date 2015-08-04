@@ -233,13 +233,14 @@ static void get_daemon(char *path, unsigned size, const strarray_t *cmd)
     else snprintf(path, size, "%s/%s", LIBEXEC_DIR, cmd->data[0]);
 }
 
-static void get_prog(char *path, unsigned size, const strarray_t *cmd)
+static void get_prog(char *path, unsigned int size, const strarray_t *cmd)
 {
     if (cmd->data[0][0] == '/') {
         /* master lacks strlcpy, due to no libcyrus */
         snprintf(path, size, "%s", cmd->data[0]);
     }
     else snprintf(path, size, "%s/%s", SBIN_DIR, cmd->data[0]);
+    path[size-1] = '\0';
 }
 
 static void get_statsock(int filedes[2])
