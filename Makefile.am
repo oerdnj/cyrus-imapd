@@ -1255,6 +1255,8 @@ backup_backupd_LDADD = $(LD_SERVER_ADD)
 
 backup_reindex_SOURCES = \
     imap/mutex_fake.c \
+    backup/api.c \
+    backup/api.h \
     backup/gzuncat.c \
     backup/gzuncat.h \
     backup/sqlconsts.c \
@@ -1263,6 +1265,8 @@ backup_reindex_SOURCES = \
 backup_reindex_LDADD = $(LD_UTILITY_ADD)
 else
 EXTRA_DIST += \
+    backup/api.c \
+    backup/api.h \
     backup/backupd.c \
     backup/gzuncat.c \
     backup/gzuncat.h \
