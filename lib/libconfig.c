@@ -216,6 +216,15 @@ EXPORTED const char *config_archivepartitiondir(const char *partition)
     return config_getoverflowstring(buf, NULL);
 }
 
+EXPORTED const char *config_backuppartitiondir(const char *partition)
+{
+    struct buf buf = BUF_INITIALIZER;
+
+    buf_printf(&buf, "backuppartition-%s", partition);
+
+    return config_getoverflowstring(buf_release(&buf), NULL);
+}
+
 static void config_ispartition(const char *key,
                                const char *val __attribute__((unused)),
                                void *rock)

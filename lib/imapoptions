@@ -432,6 +432,12 @@ Blank lines and lines beginning with ``#'' are ignored.
 /* A space separated list of users and/or groups that are allowed their INBOX to be
    automatically created. */
 
+# Commented out - there's no such thing as "backuppartition-name",
+# but we need this for the man page
+# { "backuppartition-name", NULL, STRING }
+/* The pathname of the backup partition \fIname\fR, corresponding to
+   spool partition \fBpartition-name\fR. */
+
 { "boundary_limit", 1000, INT }
 /* messages are parsed recursively and a deep enough MIME structure
    can cause a stack overflow.  Do not parse deeper than this many

@@ -1473,6 +1473,46 @@ EXPORTED char *mboxname_archivepath(const char *partition,
     return pathresult;
 }
 
+/* note: mboxname must be internal */
+EXPORTED char *mboxname_backuppath(const char *partition,
+                                   const char *mboxname,
+                                   const char *uniqueid __attribute__((unused)))
+{
+    static char pathresult[MAX_MAILBOX_PATH+1];
+    char *root = NULL;
+
+    if (!partition) return NULL;
+
+    root = xstrdup(config_backuppartitiondir(partition));
+    if (!root) root = strconcat(config_partitiondir(partition), "/backup/", NULL);
+    if (!root) return NULL;
+
+    /* XXX - dedup with datapath above - but make sure to keep the results
+     * in separate buffers and/or audit the callers */
+    if (!mboxname) {
+        xstrncpy(pathresult, root, MAX_MAILBOX_PATH);
+        return pathresult;
+    }
+
+    // trim off trailing mailboxes, we just want their inbox here
+    char *inboxname = NULL;
+    struct mboxname_parts parts;
+    mboxname_to_parts(mboxname, &parts);
+    inboxname = strconcat(parts.domain, "!user.", parts.userid, NULL);
+
+    mboxname_hash(pathresult, MAX_MAILBOX_PATH, root, inboxname);
+
+    pathresult[MAX_MAILBOX_PATH] = '\0';
+
+    free(inboxname);
+    free(root);
+
+    if (strlen(pathresult) == MAX_MAILBOX_PATH)
+        return NULL;
+
+    return pathresult;
+}
+
 char *mboxname_lockpath(const char *mboxname)
 {
     return mboxname_lockpath_suffix(mboxname, ".lock");
