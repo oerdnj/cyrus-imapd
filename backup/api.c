@@ -324,7 +324,32 @@ EXPORTED int backup_write_dlist(struct backup *backup, time_t ts, struct dlist *
     return -1;
 }
 
+// FIXME move these things to backup/index.c
+int backup_index_apply_mailbox(sqldb_t *db, time_t ts, struct dlist *dl) {
+    fprintf(stderr, "indexing MAILBOX...\n");
+    return 0;
+}
+
+int backup_index_apply_message(sqldb_t *db, time_t ts, struct dlist *dl) {
+    fprintf(stderr, "indexing MESSAGE...\n");
+    return 0;
+}
+
 EXPORTED int backup_index_dlist(struct backup *backup, time_t ts, struct dlist *dl)
 {
-    return -1;
+    int r = 0;
+
+    if (0) { }
+
+    else if (strcmp(dl->name, "MAILBOX") == 0)
+        r = backup_index_apply_mailbox(backup->db, ts, dl);
+    else if (strcmp(dl->name, "MESSAGE") == 0)
+        r = backup_index_apply_message(backup->db, ts, dl);
+
+    else {
+        fprintf(stderr, "ignoring unrecognised dlist name: %s\n", dl->name);
+        r = -1; // FIXME
+    }
+
+    return r;
 }
