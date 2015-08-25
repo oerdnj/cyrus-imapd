@@ -265,7 +265,8 @@ EXPORTED int backup_reindex(const char *name)
     while (gzuc && !gzuc_eof(gzuc)) {
         gzuc_member_start(gzuc);
 
-        fprintf(stderr, "\nfound member at offset %jd\n\n", gzuc_member_offset(gzuc));
+        fprintf(stderr, "\nfound chunk at offset %jd\n\n", gzuc_member_offset(gzuc));
+        // FIXME backup_index_create_chunk...
 
         struct protstream *member = prot_readcb(fill_cb, gzuc);
         prot_setisclient(member, 1); /* don't sync literals */
@@ -291,12 +292,16 @@ EXPORTED int backup_reindex(const char *name)
 
             ucase(dl->name);
 
+            // FIXME we need to tell this where we are in the chunk, so that it
+            // can handle that properly
+            // this might be member->bytes_in ???
             r = backup_index_dlist(backup, ts, dl);
             if (r) {
                 // FIXME do something
             }
         }
 
+        // FIXME set the length of the chunk
         prot_free(member);
         gzuc_member_end(gzuc, NULL);
     }
@@ -324,7 +329,7 @@ EXPORTED int backup_write_dlist(struct backup *backup, time_t ts, struct dlist *
     return -1;
 }
 
-// FIXME move these things to backup/index.c
+// FIXME move these things to backup/index.c (or even apply.c?)
 int backup_index_apply_mailbox(sqldb_t *db, time_t ts, struct dlist *dl) {
     fprintf(stderr, "indexing MAILBOX...\n");
     return 0;
